@@ -29,6 +29,7 @@ type Converter[T any] func(any) (T, error)
 var (
 	ErrFieldNotFound = errors.New("field not found")
 	ErrCannotConvert = errors.New("cannot convert")
+	ErrNullValue     = errors.New("null value")
 )
 
 // AsFloat64 returns a Converter that converts a value to float64.
@@ -37,7 +38,7 @@ var (
 func AsFloat64() Converter[float64] {
 	return func(v any) (float64, error) {
 		if v == nil {
-			return 0, fmt.Errorf("%w nil to float64", ErrCannotConvert)
+			return 0, ErrNullValue
 		}
 		if f, ok := v.(float64); ok {
 			return f, nil
@@ -52,7 +53,7 @@ func AsFloat64() Converter[float64] {
 func AsString() Converter[string] {
 	return func(v any) (string, error) {
 		if v == nil {
-			return "", fmt.Errorf("%w nil to string", ErrCannotConvert)
+			return "", ErrNullValue
 		}
 		if s, ok := v.(string); ok {
 			return s, nil
@@ -67,7 +68,7 @@ func AsString() Converter[string] {
 func AsBool() Converter[bool] {
 	return func(v any) (bool, error) {
 		if v == nil {
-			return false, fmt.Errorf("%w nil to bool", ErrCannotConvert)
+			return false, ErrNullValue
 		}
 		if b, ok := v.(bool); ok {
 			return b, nil
@@ -100,7 +101,7 @@ func AsInt32() Converter[int32] {
 func AsObject[T ~Object]() Converter[T] {
 	return func(v any) (T, error) {
 		if v == nil {
-			return T{}, fmt.Errorf("%w nil to Object", ErrCannotConvert)
+			return T{}, ErrNullValue
 		}
 		obj, ok := v.(Object)
 		if !ok {
@@ -118,7 +119,7 @@ func AsObject[T ~Object]() Converter[T] {
 func AsArray[T any](valueConv Converter[T]) Converter[[]T] {
 	return func(v any) ([]T, error) {
 		if v == nil {
-			return nil, fmt.Errorf("%w nil to Array", ErrCannotConvert)
+			return nil, ErrNullValue
 		}
 		arr, ok := v.([]any)
 		if !ok {

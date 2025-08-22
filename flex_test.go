@@ -125,7 +125,7 @@ func TestErrors(t *testing.T) {
 	}
 
 	// Test field not found
-	movie := Movie{"title": "Test Movie"}
+	movie := Movie{"title": "Test Movie", "alt_title": nil}
 	_, err = jsonflex.GetField(movie, "non_existent_field", jsonflex.AsInt32())
 	if err == nil || !errors.Is(err, jsonflex.ErrFieldNotFound) {
 		t.Errorf("expected field not found error, got %v", err)
@@ -135,5 +135,11 @@ func TestErrors(t *testing.T) {
 	_, err = jsonflex.GetField(movie, "title", jsonflex.AsBool())
 	if err == nil || !errors.Is(err, jsonflex.ErrCannotConvert) {
 		t.Errorf("expected conversion error, got %v", err)
+	}
+
+	// Test nil value
+	_, err = jsonflex.GetField(movie, "alt_title", jsonflex.AsString())
+	if err == nil || !errors.Is(err, jsonflex.ErrNullValue) {
+		t.Errorf("expected null value error, got %v", err)
 	}
 }
