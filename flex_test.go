@@ -1,6 +1,7 @@
 package jsonflex_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/krelinga/go-jsonflex"
@@ -113,5 +114,26 @@ func TestBar(t *testing.T) {
 	}
 	if assertNoError(keywords[0].Name())(t) != "Action" || assertNoError(keywords[1].Name())(t) != "Adventure" || assertNoError(keywords[2].Name())(t) != "Science Fiction" {
 		t.Fatalf("expected keyword names to be ['Action', 'Adventure', 'Science Fiction'], got ['%s', '%s', '%s']", assertNoError(keywords[0].Name())(t), assertNoError(keywords[1].Name())(t), assertNoError(keywords[2].Name())(t))
+	}
+}
+
+func TestErrors(t *testing.T) {
+	// Test nil object access
+	_, err := jsonflex.GetField(nil, "title", jsonflex.AsString())
+	if err == nil || errors.Is(err, jsonflex.ErrFieldNotFound) || errors.Is(err, jsonflex.ErrCannotConvert) {
+		t.Errorf("expected non-specific error accessing field on nil object, got %v", err)
+	}
+
+	// Test field not found
+	movie := Movie{"title": "Test Movie"}
+	_, err = jsonflex.GetField(movie, "non_existent_field", jsonflex.AsInt32())
+	if err == nil || !errors.Is(err, jsonflex.ErrFieldNotFound) {
+		t.Errorf("expected field not found error, got %v", err)
+	}
+
+	// Test conversion error
+	_, err = jsonflex.GetField(movie, "title", jsonflex.AsBool())
+	if err == nil || !errors.Is(err, jsonflex.ErrCannotConvert) {
+		t.Errorf("expected conversion error, got %v", err)
 	}
 }

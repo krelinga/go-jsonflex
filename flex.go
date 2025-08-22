@@ -4,6 +4,7 @@
 package jsonflex
 
 import (
+	"errors"
 	"fmt"
 	"math"
 )
@@ -25,18 +26,23 @@ type Number = float64
 // Converters are used throughout this package to provide type-safe value extraction.
 type Converter[T any] func(any) (T, error)
 
+var (
+	ErrFieldNotFound = errors.New("field not found")
+	ErrCannotConvert = errors.New("cannot convert")
+)
+
 // AsFloat64 returns a Converter that converts a value to float64.
 // It accepts float64 values and returns an error for nil or other types.
 // This is the primary converter for JSON numbers.
 func AsFloat64() Converter[float64] {
 	return func(v any) (float64, error) {
 		if v == nil {
-			return 0, fmt.Errorf("cannot convert nil to float64")
+			return 0, fmt.Errorf("%w nil to float64", ErrCannotConvert)
 		}
 		if f, ok := v.(float64); ok {
 			return f, nil
 		}
-		return 0, fmt.Errorf("cannot convert %T to float64", v)
+		return 0, fmt.Errorf("%w %T to float64", ErrCannotConvert, v)
 	}
 }
 
@@ -46,12 +52,12 @@ func AsFloat64() Converter[float64] {
 func AsString() Converter[string] {
 	return func(v any) (string, error) {
 		if v == nil {
-			return "", fmt.Errorf("cannot convert nil to string")
+			return "", fmt.Errorf("%w nil to string", ErrCannotConvert)
 		}
 		if s, ok := v.(string); ok {
 			return s, nil
 		}
-		return "", fmt.Errorf("cannot convert %T to string", v)
+		return "", fmt.Errorf("%w %T to string", ErrCannotConvert, v)
 	}
 }
 
@@ -61,12 +67,12 @@ func AsString() Converter[string] {
 func AsBool() Converter[bool] {
 	return func(v any) (bool, error) {
 		if v == nil {
-			return false, fmt.Errorf("cannot convert nil to bool")
+			return false, fmt.Errorf("%w nil to bool", ErrCannotConvert)
 		}
 		if b, ok := v.(bool); ok {
 			return b, nil
 		}
-		return false, fmt.Errorf("cannot convert %T to bool", v)
+		return false, fmt.Errorf("%w %T to bool", ErrCannotConvert, v)
 	}
 }
 
@@ -83,7 +89,7 @@ func AsInt32() Converter[int32] {
 		if f >= float64(math.MinInt32) && f <= float64(math.MaxInt32) && f == float64(int32(f)) {
 			return int32(f), nil
 		}
-		return 0, fmt.Errorf("cannot convert %T to int32", v)
+		return 0, fmt.Errorf("%w %T to int32", ErrCannotConvert, v)
 	}
 }
 
@@ -94,11 +100,11 @@ func AsInt32() Converter[int32] {
 func AsObject[T ~Object]() Converter[T] {
 	return func(v any) (T, error) {
 		if v == nil {
-			return T{}, fmt.Errorf("cannot convert nil to Object")
+			return T{}, fmt.Errorf("%w nil to Object", ErrCannotConvert)
 		}
 		obj, ok := v.(Object)
 		if !ok {
-			return T{}, fmt.Errorf("cannot convert %T to Object", v)
+			return T{}, fmt.Errorf("%w %T to Object", ErrCannotConvert, v)
 		}
 		return T(obj), nil
 	}
@@ -112,17 +118,17 @@ func AsObject[T ~Object]() Converter[T] {
 func AsArray[T any](valueConv Converter[T]) Converter[[]T] {
 	return func(v any) ([]T, error) {
 		if v == nil {
-			return nil, fmt.Errorf("cannot convert nil to Array")
+			return nil, fmt.Errorf("%w nil to Array", ErrCannotConvert)
 		}
 		arr, ok := v.([]any)
 		if !ok {
-			return nil, fmt.Errorf("cannot convert %T to Array", v)
+			return nil, fmt.Errorf("%w %T to Array", ErrCannotConvert, v)
 		}
 		result := make([]T, len(arr))
 		for i, item := range arr {
 			converted, err := valueConv(item)
 			if err != nil {
-				return nil, fmt.Errorf("error converting item %d: %w", i, err)
+				return nil, fmt.Errorf("item %d: %w", i, err)
 			}
 			result[i] = converted
 		}
@@ -152,7 +158,7 @@ func GetField[T any](obj Object, key string, conv Converter[T]) (T, error) {
 	value, exists := obj[key]
 	if !exists {
 		var zero T
-		return zero, fmt.Errorf("field %q does not exist in object", key)
+		return zero, fmt.Errorf("%w %q", ErrFieldNotFound, key)
 	}
 	return conv(value)
 }
